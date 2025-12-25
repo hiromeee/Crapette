@@ -28,10 +28,12 @@ export const useGameLogic = (socket: Socket | null) => {
         const myId = socket.id;
         if (!myId) return;
 
+        const label = data.players[myId]; // 'player1' or 'player2'
+        
         setRoomId(data.roomId);
         setGameState(data.gameState);
-        setMyPlayerId(myId);
-        setPlayerLabel(data.players[myId]);
+        setMyPlayerId(label);
+        setPlayerLabel(label as 'player1' | 'player2');
         setIsActive(true);
     });
 
@@ -101,15 +103,41 @@ export const useGameLogic = (socket: Socket | null) => {
         });
     });
     
+    socket.on('turn_update', (data: { activePlayer: string }) => {
+        console.log(`[Client] Turn update received. Next: ${data.activePlayer}, Me: ${myPlayerId}`);
+        setGameState(prevState => {
+            if (!prevState) return null;
+            return {
+                ...prevState,
+                currentPlayerId: data.activePlayer
+            };
+        });
+    });
+    
     return () => {
       socket.off('game_start');
       socket.off('action_update');
+      socket.off('turn_update');
     };
-  }, [socket]);
+  }, [socket, myPlayerId]);
+
+  const endTurn = useCallback(() => {
+    if (!socket || !roomId || !gameState || !myPlayerId) return;
+    
+    // Optimistic Update
+    const opponentId = Object.keys(gameState.players).find(id => id !== myPlayerId);
+    if (opponentId) {
+        setGameState(prev => prev ? ({ ...prev, currentPlayerId: opponentId }) : null);
+    }
+
+    socket.emit('end_turn', { roomId, playerId: myPlayerId });
+  }, [socket, roomId, gameState, myPlayerId]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !gameState || !myPlayerId) return;
+
+    console.log('DROPPED ON:', over.id, 'TYPE:', typeof over.id);
 
     const sourceCard = active.data.current as Card;
     const dropData = over.data.current as DropZone;
@@ -191,6 +219,34 @@ export const useGameLogic = (socket: Socket | null) => {
                 });
             }
 
+            // Check for Turn End Condition (Drop on OWN Waste)
+            const targetId = String(over.id).toLowerCase();
+            const isWasteTarget = targetId.includes('waste');
+            const isMine = targetId.includes(myPlayerId.toLowerCase()) || targetId === 'waste';
+
+            if (isWasteTarget && isMine) {
+                // Guard: If not my turn, ignore
+                if (gameState.currentPlayerId !== myPlayerId) {
+                     console.warn('Turn End Ignored: Not my turn');
+                     return newState;
+                }
+
+                console.log('✅ Turn End Triggered via Waste Drop');
+                
+                // 1. Emit to server with explicit playerId
+                if (socket && roomId) {
+                    socket.emit('end_turn', { roomId, playerId: myPlayerId });
+                }
+
+                // 2. Immediate Lock (Optimistic Update)
+                // Since myPlayerId is now 'player1' or 'player2', we can just toggle it
+                const nextPlayer = (myPlayerId === 'player1') ? 'player2' : 'player1';
+                newState.currentPlayerId = nextPlayer;
+                
+            } else {
+                console.log('❌ Turn End Ignored. Target:', targetId, 'isWaste:', isWasteTarget, 'isMine:', isMine);
+            }
+
             return newState;
         });
     } else {
@@ -204,6 +260,7 @@ export const useGameLogic = (socket: Socket | null) => {
     myPlayerId,
     playerLabel,
     isActive,
-    handleDragEnd
+    handleDragEnd,
+    endTurn
   };
 };

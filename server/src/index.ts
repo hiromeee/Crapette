@@ -47,8 +47,9 @@ const generateInitialState = (p1Id: string, p2Id: string): GameState => {
       };
     };
 
-    const p1 = setupPlayer(p1Id, 'Player 1', playerDeck);
-    const p2 = setupPlayer(p2Id, 'Player 2', opponentDeck);
+    // Use 'player1' and 'player2' as IDs internally in GameState
+    const p1 = setupPlayer('player1', 'Player 1', playerDeck);
+    const p2 = setupPlayer('player2', 'Player 2', opponentDeck);
 
     // Deal to tableau from P1 stock
     const tableau: Card[][] = Array(8).fill([]).map(() => []);
@@ -62,12 +63,12 @@ const generateInitialState = (p1Id: string, p2Id: string): GameState => {
 
     return {
       players: {
-        [p1Id]: p1,
-        [p2Id]: p2,
+        'player1': p1,
+        'player2': p2,
       },
       tableau,
       foundations: Array(8).fill([]),
-      currentPlayerId: p1Id, // Player 1 starts
+      currentPlayerId: 'player1', // Player 1 starts
     };
 };
 
@@ -123,6 +124,37 @@ io.on('connection', (socket) => {
       // Relay move to opponent
       socket.to(data.roomId).emit('action_update', data.move);
       // TODO: Update server-side state if we want full validation later
+  });
+
+  socket.on('end_turn', (data: { roomId: string, playerId?: string }) => {
+      const room = rooms[data.roomId];
+      if (room && room.gameState) {
+          // Identify requesting player: Prefer payload ID, fallback to socket map
+          const requestingPlayerId = data.playerId || (room.players[0] === socket.id ? 'player1' : (room.players[1] === socket.id ? 'player2' : null));
+          
+          if (!requestingPlayerId) {
+             console.warn(`[Server] Unknown socket ${socket.id} tried to end turn in room ${data.roomId}`);
+             return;
+          }
+
+          const current = room.gameState.currentPlayerId;
+          
+          console.log(`[Server] End turn req from: ${requestingPlayerId} (Active: ${current})`);
+
+          // Validation: Only active player can end turn
+          if (requestingPlayerId !== current) {
+              console.warn(`[Server] Request ignored. ${requestingPlayerId} tried to end turn, but it is ${current}'s turn.`);
+              return;
+          }
+          
+          // Toggle logic: Strict string literal toggling
+          const nextPlayer = (current === 'player1') ? 'player2' : 'player1';
+          
+          room.gameState.currentPlayerId = nextPlayer;
+          
+          io.to(data.roomId).emit('turn_update', { activePlayer: nextPlayer });
+          console.log(`Turn switched in ${data.roomId}: ${current} -> ${nextPlayer}`);
+      }
   });
 
   socket.on('disconnect', () => {

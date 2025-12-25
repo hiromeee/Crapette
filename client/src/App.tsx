@@ -5,7 +5,7 @@ import { useSocket } from './hooks/useSocket';
 
 function App() {
   const { socket, isConnected, joinGame } = useSocket();
-  const { gameState, myPlayerId, playerLabel, isActive, handleDragEnd } = useGameLogic(socket);
+  const { gameState, myPlayerId, playerLabel, isActive, handleDragEnd, endTurn } = useGameLogic(socket);
 
   return (
     <div className="min-h-screen bg-green-800 flex items-center justify-center overflow-hidden">
@@ -28,7 +28,12 @@ function App() {
       ) : (
         gameState && myPlayerId && (
             <DndContext onDragEnd={handleDragEnd}>
-            <GameBoard gameState={gameState} playerId={myPlayerId} playerLabel={playerLabel} />
+            <GameBoard 
+                gameState={gameState} 
+                playerId={myPlayerId} 
+                playerLabel={playerLabel} 
+                onEndTurn={endTurn}
+            />
             </DndContext>
         )
       )}

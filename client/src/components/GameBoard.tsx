@@ -8,10 +8,18 @@ interface GameBoardProps {
   gameState: GameState;
   playerId: string;
   playerLabel?: 'player1' | 'player2' | null;
+  onEndTurn: () => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playerLabel }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playerLabel, onEndTurn }) => {
   const player = gameState.players[playerId];
+  
+  // Safety check: If player data is missing (e.g. server/client mismatch), don't crash
+  if (!player) {
+      console.error(`CRITICAL: Player data not found for ID: ${playerId}. Available keys:`, Object.keys(gameState.players));
+      return <div className="text-white text-center mt-20">Error: Player data sync mismatch. Please restart the game.</div>;
+  }
+
   // Find opponent ID: It's the key in players that is NOT my playerId
   const opponentId = Object.keys(gameState.players).find(id => id !== playerId);
   const opponent = opponentId ? gameState.players[opponentId] : undefined;
@@ -123,13 +131,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
            </div>
         </div>
         
-        {/* Hand */}
-        <div className="flex -space-x-8 hover:space-x-2 transition-all p-2">
-            {player.hand.map((card) => (
-                <div key={card.id} className="transition-transform hover:-translate-y-4">
-                    <Card card={card} />
-                </div>
-            ))}
+        {/* Hand and Controls */}
+        <div className="flex items-end gap-8">
+            <div className="flex -space-x-8 hover:space-x-2 transition-all p-2">
+                {player.hand.map((card) => (
+                    <div key={card.id} className="transition-transform hover:-translate-y-4">
+                        <Card card={card} disabled={!isMyTurn} />
+                    </div>
+                ))}
+            </div>
+            
+            <button
+                onClick={onEndTurn}
+                disabled={!isMyTurn}
+                className={`
+                    px-6 py-3 rounded-lg font-bold text-white shadow-lg transition-all
+                    ${isMyTurn 
+                        ? 'bg-red-600 hover:bg-red-700 active:scale-95 cursor-pointer' 
+                        : 'bg-gray-500 opacity-50 cursor-not-allowed'}
+                `}
+            >
+                End Turn
+            </button>
         </div>
       </div>
     </div>

@@ -68,21 +68,28 @@ export const isValidMove = ({
         );
     }
 
-    // 3. Opponent Piles (Waste / Crapette): Same suit, Rank +/- 1
-    // Only allowed if target is NOT the current player
-    if ((targetZoneType === 'waste' || targetZoneType === 'crapette') && targetPlayerId && targetPlayerId !== currentPlayerId) {
-        const opponentState = gameState.players[targetPlayerId];
-        if (!opponentState) return false;
+    // 3. Waste / Crapette Move
+    if (targetZoneType === 'waste' || targetZoneType === 'crapette') {
+        // 3a. Move to OWN Waste (Always allowed to end turn)
+        if (targetZoneType === 'waste' && targetPlayerId === currentPlayerId) {
+            return true;
+        }
 
-        const pile = targetZoneType === 'waste' ? opponentState.waste : opponentState.crapettePile;
-        const topCard = getTopCard(pile);
+        // 3b. Move to Opponent's Waste or Crapette
+        if (targetPlayerId && targetPlayerId !== currentPlayerId) {
+            const opponentState = gameState.players[targetPlayerId];
+            if (!opponentState) return false;
 
-        if (!topCard) return false; // Cannot load onto empty opponent pile (usually)
+            const pile = targetZoneType === 'waste' ? opponentState.waste : opponentState.crapettePile;
+            const topCard = getTopCard(pile);
 
-        return (
-            sourceCard.suit === topCard.suit &&
-            (Math.abs(getRankValue(sourceCard.rank) - getRankValue(topCard.rank)) === 1)
-        );
+            if (!topCard) return false; // Cannot load onto empty opponent pile
+
+            return (
+                sourceCard.suit === topCard.suit &&
+                (Math.abs(getRankValue(sourceCard.rank) - getRankValue(topCard.rank)) === 1)
+            );
+        }
     }
 
     return false;
