@@ -14,10 +14,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
   const opponentId = Object.keys(gameState.players).find(id => id !== playerId) || 'opponent';
   const opponent = gameState.players[opponentId];
 
-  const renderPile = (cards: CardType[], zoneId: string, emptyPlaceholder: string) => {
+  const renderPile = (cards: CardType[], zoneId: string, emptyPlaceholder: string, type: any, playerId?: string) => {
     const topCard = cards[cards.length - 1];
     return (
-      <Zone id={zoneId} placeholder={emptyPlaceholder}>
+      <Zone 
+        id={zoneId} 
+        placeholder={emptyPlaceholder}
+        data={{ id: zoneId, type, playerId }}
+      >
         {topCard && <Card card={topCard} />}
       </Zone>
     );
@@ -32,9 +36,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
            <div className="flex flex-col gap-2 items-center">
              <span className="text-xs text-white/50">Opponent</span>
              <div className="flex gap-2">
-                {opponent && renderPile(opponent.stock, `stock-${opponentId}`, 'Stock')}
-                {opponent && renderPile(opponent.waste, `waste-${opponentId}`, 'Waste')}
-                {opponent && renderPile(opponent.crapettePile, `crapette-${opponentId}`, 'Crapette')}
+                {opponent && renderPile(opponent.stock, `stock-${opponentId}`, 'Stock', 'stock', opponentId)}
+                {opponent && renderPile(opponent.waste, `waste-${opponentId}`, 'Waste', 'waste', opponentId)}
+                {opponent && renderPile(opponent.crapettePile, `crapette-${opponentId}`, 'Crapette', 'crapette', opponentId)}
              </div>
            </div>
         </div>
@@ -46,7 +50,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
         {/* Foundations (8 slots) */}
         <div className="flex justify-center gap-2 flex-wrap">
           {gameState.foundations.map((pile, index) => (
-            <Zone key={`foundation-${index}`} id={`foundation-${index}`} placeholder="A">
+            <Zone 
+                key={`foundation-${index}`} 
+                id={`foundation-${index}`} 
+                placeholder="A"
+                data={{ id: `foundation-${index}`, type: 'foundation', index }}
+            >
               {pile.length > 0 && <Card card={pile[pile.length - 1]} />}
             </Zone>
           ))}
@@ -56,12 +65,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
         <div className="flex justify-center gap-2 flex-wrap">
           {gameState.tableau.map((pile, index) => (
             <div key={`tableau-${index}`} className="relative">
-               {/* Tableau is a stack, but for now just showing top card or empty zone */}
-               {/* In real game, tableau is cascaded. For step 1, just top card is fine or simple stack */}
-               <Zone id={`tableau-${index}`} placeholder="Tableau">
+               <Zone 
+                id={`tableau-${index}`} 
+                placeholder="Tableau"
+                data={{ id: `tableau-${index}`, type: 'tableau', index }}
+               >
                  {pile.length > 0 && <Card card={pile[pile.length - 1]} />}
                </Zone>
-               {/* Visual stack effect could be added here later */}
             </div>
           ))}
         </div>
@@ -74,9 +84,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
            <div className="flex flex-col gap-2 items-center">
              <span className="text-xs text-white/50">You</span>
              <div className="flex gap-2">
-                {renderPile(player.crapettePile, `crapette-${playerId}`, 'Crapette')}
-                {renderPile(player.waste, `waste-${playerId}`, 'Waste')}
-                {renderPile(player.stock, `stock-${playerId}`, 'Stock')}
+                {renderPile(player.crapettePile, `crapette-${playerId}`, 'Crapette', 'crapette', playerId)}
+                {renderPile(player.waste, `waste-${playerId}`, 'Waste', 'waste', playerId)}
+                {renderPile(player.stock, `stock-${playerId}`, 'Stock', 'stock', playerId)}
              </div>
            </div>
         </div>

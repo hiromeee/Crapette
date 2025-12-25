@@ -3,16 +3,20 @@ import { useDroppable } from '@dnd-kit/core';
 
 import { twMerge } from 'tailwind-merge';
 
+import type { DropZone } from '../types/game';
+
 interface ZoneProps {
   id: string;
   children?: React.ReactNode;
   className?: string;
   placeholder?: string;
+  data?: DropZone;
 }
 
-export const Zone: React.FC<ZoneProps> = ({ id, children, className, placeholder }) => {
+export const Zone: React.FC<ZoneProps> = ({ id, children, className, placeholder, data }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: id,
+    data: data,
   });
 
   return (
