@@ -7,7 +7,7 @@ import { twMerge } from 'tailwind-merge';
 interface CardProps {
   card: CardType;
   className?: string;
-  isDraggable?: boolean;
+  disabled?: boolean;
 }
 
 const suitSymbols: Record<string, string> = {
@@ -24,11 +24,11 @@ const suitColors: Record<string, string> = {
   spades: 'text-black',
 };
 
-export const Card: React.FC<CardProps> = ({ card, className, isDraggable = true }) => {
+export const Card = ({ card, className, disabled }: CardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
     data: card,
-    disabled: !isDraggable || !card.faceUp,
+    disabled: disabled || !card.faceUp,
   });
 
   const style = transform ? {
@@ -41,6 +41,8 @@ export const Card: React.FC<CardProps> = ({ card, className, isDraggable = true 
         ref={setNodeRef}
         {...listeners}
         {...attributes}
+        role={attributes.role as React.AriaRole}
+        tabIndex={attributes.tabIndex}
         style={style}
         className={twMerge(
           "w-16 h-24 bg-blue-700 rounded-lg border-2 border-white shadow-md flex items-center justify-center select-none",
@@ -58,9 +60,12 @@ export const Card: React.FC<CardProps> = ({ card, className, isDraggable = true 
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      role={attributes.role as React.AriaRole}
+      tabIndex={attributes.tabIndex}
       style={style}
       className={twMerge(
-        "w-16 h-24 bg-white rounded-lg border border-gray-300 shadow-md flex flex-col items-center justify-between p-1 select-none cursor-grab active:cursor-grabbing",
+        "w-16 h-24 bg-white rounded-lg border border-gray-300 shadow-md flex flex-col items-center justify-between p-1 select-none",
+        disabled ? "cursor-not-allowed opacity-90" : "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50 z-50",
         className
       )}

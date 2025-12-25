@@ -6,23 +6,49 @@ import { Zone } from './Zone';
 
 interface GameBoardProps {
   gameState: GameState;
-  playerId: string; // 'player' or 'opponent'
+  playerId: string;
+  playerLabel?: 'player1' | 'player2' | null;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playerLabel }) => {
   const player = gameState.players[playerId];
-  const opponentId = Object.keys(gameState.players).find(id => id !== playerId) || 'opponent';
-  const opponent = gameState.players[opponentId];
+  // Find opponent ID: It's the key in players that is NOT my playerId
+  const opponentId = Object.keys(gameState.players).find(id => id !== playerId);
+  const opponent = opponentId ? gameState.players[opponentId] : undefined;
+  
+  const isMyTurn = gameState.currentPlayerId === playerId;
 
-  const renderPile = (cards: CardType[], zoneId: string, emptyPlaceholder: string, type: any, playerId?: string) => {
+  // Mirrored View Logic
+  const isMirrored = playerLabel === 'player2';
+
+  const foundationsToRender = isMirrored 
+    ? [...gameState.foundations].reverse() 
+    : gameState.foundations;
+    
+  const tableauToRender = isMirrored
+    ? [...gameState.tableau].reverse()
+    : gameState.tableau;
+
+  // Helper to get original index
+  const getOriginalIndex = (index: number) => isMirrored ? 7 - index : index;
+
+  const renderPile = (cards: CardType[], zoneId: string, emptyPlaceholder: string, type: any, ownerId?: string) => {
     const topCard = cards[cards.length - 1];
+    
+    // Disable if:
+    // 1. Not my turn
+    // 2. Card belongs to opponent (ownerId exists and is not me)
+    // Note: Tableau/Foundation don't have ownerId passed usually, or we can treat them as neutral (enabled if my turn)
+    
+    const isDisabled = !isMyTurn || (!!ownerId && ownerId !== playerId);
+
     return (
       <Zone 
         id={zoneId} 
         placeholder={emptyPlaceholder}
-        data={{ id: zoneId, type, playerId }}
+        data={{ id: zoneId, type, playerId: ownerId }}
       >
-        {topCard && <Card card={topCard} />}
+        {topCard && <Card card={topCard} disabled={isDisabled} />}
       </Zone>
     );
   };
@@ -49,31 +75,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId }) => 
       <div className="flex-1 flex flex-col justify-center gap-8">
         {/* Foundations (8 slots) */}
         <div className="flex justify-center gap-2 flex-wrap">
-          {gameState.foundations.map((pile, index) => (
+          {foundationsToRender.map((pile, i) => {
+            const originalIndex = getOriginalIndex(i);
+            return (
             <Zone 
-                key={`foundation-${index}`} 
-                id={`foundation-${index}`} 
+                key={`foundation-${originalIndex}`} 
+                id={`foundation-${originalIndex}`} 
                 placeholder="A"
-                data={{ id: `foundation-${index}`, type: 'foundation', index }}
+                data={{ id: `foundation-${originalIndex}`, type: 'foundation', index: originalIndex }}
             >
-              {pile.length > 0 && <Card card={pile[pile.length - 1]} />}
+              {pile.length > 0 && <Card card={pile[pile.length - 1]} disabled={!isMyTurn} />}
             </Zone>
-          ))}
+            );
+          })}
         </div>
 
         {/* Tableau (8 slots) */}
         <div className="flex justify-center gap-2 flex-wrap">
-          {gameState.tableau.map((pile, index) => (
-            <div key={`tableau-${index}`} className="relative">
+          {tableauToRender.map((pile, i) => {
+            const originalIndex = getOriginalIndex(i);
+            return (
+            <div key={`tableau-${originalIndex}`} className="relative">
                <Zone 
-                id={`tableau-${index}`} 
+                id={`tableau-${originalIndex}`} 
                 placeholder="Tableau"
-                data={{ id: `tableau-${index}`, type: 'tableau', index }}
+                data={{ id: `tableau-${originalIndex}`, type: 'tableau', index: originalIndex }}
                >
-                 {pile.length > 0 && <Card card={pile[pile.length - 1]} />}
+                 {pile.length > 0 && <Card card={pile[pile.length - 1]} disabled={!isMyTurn} />}
                </Zone>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
