@@ -28,7 +28,7 @@ export const Card = ({ card, className, disabled }: CardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
     data: card,
-    disabled: disabled || !card.faceUp,
+    disabled: disabled || !card.faceUp, // Ensure disabled prop is respected
   });
 
   const style = transform ? {

@@ -25,6 +25,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
   const opponent = opponentId ? gameState.players[opponentId] : undefined;
   
   const isMyTurn = gameState.currentPlayerId === playerId;
+  console.log('Rendering Board: isMyTurn =', isMyTurn);
 
   // Mirrored View Logic
   const isMirrored = playerLabel === 'player2';
@@ -47,8 +48,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
     // 1. Not my turn
     // 2. Card belongs to opponent (ownerId exists and is not me)
     // Note: Tableau/Foundation don't have ownerId passed usually, or we can treat them as neutral (enabled if my turn)
-    
-    const isDisabled = !isMyTurn || (!!ownerId && ownerId !== playerId);
 
     return (
       <Zone 
@@ -56,7 +55,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
         placeholder={emptyPlaceholder}
         data={{ id: zoneId, type, playerId: ownerId }}
       >
-        {topCard && <Card card={topCard} disabled={isDisabled} />}
+        {topCard && (
+            <Card 
+                key={topCard.id} 
+                card={topCard} 
+                disabled={!isMyTurn || (!!ownerId && ownerId !== playerId)} 
+            />
+        )}
       </Zone>
     );
   };
@@ -118,7 +123,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
       </div>
 
       {/* Player Area (Bottom) */}
-      <div className="flex justify-between items-end bg-black/20 p-4 rounded-xl">
+      <div 
+        className="flex justify-between items-end bg-black/20 p-4 rounded-xl"
+        style={{
+            pointerEvents: !isMyTurn ? 'none' : 'auto',
+            opacity: !isMyTurn ? 0.7 : 1,
+            transition: 'opacity 0.3s ease'
+        }}
+      >
         <div className="flex gap-4">
            {/* Player Stock & Waste & Crapette */}
            <div className="flex flex-col gap-2 items-center">
