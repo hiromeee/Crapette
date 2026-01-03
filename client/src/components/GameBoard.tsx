@@ -124,12 +124,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ gameState, playerId, playe
 
       {/* Player Area (Bottom) */}
       <div 
-        className="flex justify-between items-end bg-black/20 p-4 rounded-xl"
-        style={{
-            pointerEvents: !isMyTurn ? 'none' : 'auto',
-            opacity: !isMyTurn ? 0.7 : 1,
-            transition: 'opacity 0.3s ease'
-        }}
+        className={`flex justify-between items-end bg-black/20 p-4 rounded-xl transition-all duration-300 ${!isMyTurn ? 'pointer-events-none select-none opacity-70 grayscale-[0.5]' : ''}`}
       >
         <div className="flex gap-4">
            {/* Player Stock & Waste & Crapette */}

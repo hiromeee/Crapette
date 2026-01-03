@@ -65,7 +65,7 @@ export const Card = ({ card, className, disabled }: CardProps) => {
       style={style}
       className={twMerge(
         "w-16 h-24 bg-white rounded-lg border border-gray-300 shadow-md flex flex-col items-center justify-between p-1 select-none",
-        disabled ? "cursor-not-allowed opacity-90" : "cursor-grab active:cursor-grabbing",
+        disabled ? "cursor-not-allowed opacity-70" : "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50 z-50",
         className
       )}
